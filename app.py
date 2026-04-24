@@ -202,8 +202,8 @@ if st.button("Generate Podcast") and topic:
                 podcast_text += block.text
 
     # Show the script
-    st.subheader("📝 Podcast Script")
-    st.write(podcast_text)
+    #st.subheader("📝 Podcast Script")
+    #st.write(podcast_text)
 
     # Step 3: Generate audio
     with st.status("Generating audio...", expanded=False):
