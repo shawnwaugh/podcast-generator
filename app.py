@@ -121,7 +121,7 @@ def generate_podcast_audio(podcast_text, filename):
         audio = el_client.text_to_speech.convert(
             text=text,
             voice_id=voice_id,
-            model_id="eleven_multilingual_v2",
+            model_id="eleven_flash_v2_5",
             output_format="mp3_44100_128",
         )
 
@@ -143,7 +143,7 @@ topic = st.text_input("What would you like to research?", placeholder="e.g. The 
 
 if st.button("Generate Podcast") and topic:
 
-    # Step 1: Research
+    # Research
     status = st.status("Researching your topic...", expanded=True)
     messages = [{"role": "user", "content": topic}]
 
@@ -185,7 +185,7 @@ if st.button("Generate Podcast") and topic:
 
     status.update(label="Research complete!", state="complete")
 
-    # Step 2: Generate podcast script
+    # Generate podcast script
     with st.status("Writing podcast script...", expanded=False):
         podcast_response = client.messages.create(
             model="claude-sonnet-4-6",
@@ -202,17 +202,17 @@ if st.button("Generate Podcast") and topic:
                 podcast_text += block.text
 
     # Show the script
-    #st.subheader("📝 Podcast Script")
-    #st.write(podcast_text)
+    # st.subheader("📝 Podcast Script")
+    # st.write(podcast_text)
 
-    # Step 3: Generate audio
+    # Generate audio
     with st.status("Generating audio...", expanded=False):
         safe_topic = topic.replace(" ", "_").replace("?", "").replace("/", "").replace(":", "")[:50]
         filename_mp3 = f"podcast_{safe_topic}.mp3"
 
         generate_podcast_audio(podcast_text, filename_mp3)
 
-    # Step 4: Show audio player
+    # Show audio player
     st.subheader("🎧 Listen")
     with open(filename_mp3, "rb") as audio_file:
         st.audio(audio_file.read(), format="audio/mp3")
