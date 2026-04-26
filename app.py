@@ -121,7 +121,7 @@ def generate_podcast_audio(podcast_text, filename):
         audio = el_client.text_to_speech.convert(
             text=text,
             voice_id=voice_id,
-            model_id="eleven_flash_v2_5",
+            model_id="eleven_turbo_v2_5",
             output_format="mp3_44100_128",
         )
 
