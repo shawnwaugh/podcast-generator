@@ -6,15 +6,16 @@ from elevenlabs.client import ElevenLabs
 from pydub import AudioSegment
 from ddgs import DDGS
 
-# ---Session State Creation---
-if "podcast_audio" not in st.session_state:
-    st.session_state.podcast_audio = None
-    st.session_state.podcast_filename = None
-
 # --- Page Setup ---
 st.set_page_config(page_title="AI Podcast Generator", page_icon="🎙️")
 st.title("🎙️ AI Podcast Generator")
 st.write("Listen to a custom podcast about anything you can imagine.")
+
+# --- Session State Initialization ---
+if "podcast_audio" not in st.session_state:
+    st.session_state.podcast_audio = None
+    st.session_state.podcast_filename = None
+    st.session_state.podcast_script = None
 
 # --- API Keys ---
 anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -205,6 +206,9 @@ if st.button("Generate Podcast") and topic:
             if hasattr(item, "text"):
                 podcast_text += item.text
 
+    # Store the script in Session State
+    st.session_state.podcast_script = podcast_text
+
     # Generate audio
     with st.status("Generating audio...", expanded=False):
         safe_topic = topic.replace(" ", "_").replace("?", "").replace("/", "").replace(":", "")[:50]
@@ -212,14 +216,15 @@ if st.button("Generate Podcast") and topic:
 
         generate_podcast_audio(podcast_text, filename_mp3)
 
-# Store audio in Session State
+    # Store audio in Session State
     with open(filename_mp3, "rb") as audio_file:
         st.session_state.podcast_audio = audio_file.read()
         st.session_state.podcast_filename = filename_mp3
 
-    # Clean up
+    # Clean up the file from disk since it is now stored in memory
     os.remove(filename_mp3)
 
+# --- Display podcast if one exists in Session State ---
 if st.session_state.podcast_audio:
     st.subheader("🎧 Listen")
     st.audio(st.session_state.podcast_audio, format="audio/mp3")
