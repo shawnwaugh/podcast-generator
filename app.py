@@ -22,8 +22,8 @@ if not elevenlabs_key:
     st.error("No ElevenLabs API key found. Please set ELEVENLABS_API_KEY.")
     st.stop()
 
-client = anthropic.Anthropic(api_key=anthropic_key)
-el_client = ElevenLabs(api_key=elevenlabs_key)
+claude_client = anthropic.Anthropic(api_key=anthropic_key)
+elevenlabs_client = ElevenLabs(api_key=elevenlabs_key)
 
 # --- Prompts ---
 system_prompt = """You are a research assistant. When given a topic, your job is to 
@@ -60,7 +60,7 @@ Rules:
 - Kyle speaks like an expert. Samantha explains technical jargon in plain language 
   and asks for clarification or elaboration.
 - Use filler words, filled pauses, and hesitation markers to mimic the rhythm of a real conversation.
-- Avoid m-dashes, markdown, atserisks, and other punctuation that cannot be spoken by TTS.
+- Avoid m-dashes, markdown, asterisks, and other punctuation that cannot be spoken by TTS.
 - End with a "What to watch" closing from Kyle.
 - Format each line as: Kyle: or Samantha: followed by their dialog."""
 
@@ -82,26 +82,26 @@ tools = [
     }
 ]
 
-def run_search(query):
+def run_search(search_query):
     try:
-        results = DDGS().text(query, max_results=5)
+        results = DDGS().text(search_query, max_results=5)
         if not results:
             return "No results found for this query."
         output = ""
-        for r in results:
-            output += f"Title: {r['title']}\n"
-            output += f"Snippet: {r['body']}\n\n"
+        for result in results:
+            output += f"Title: {result['title']}\n"
+            output += f"Snippet: {result['body']}\n\n"
         return output
-    except Exception as e:
-        return f"Search failed with error: {e}"
+    except Exception as error:
+        return f"Search failed with error: {error}"
 
 # --- Audio Generation ---
-def generate_podcast_audio(podcast_text, filename):
-    kyle_voice_id = "4YYIPFl9wE5c4L2eu2Gb"
-    samantha_voice_id = "mWqiTfcp72MprLxlUR8h"
+def generate_podcast_audio(podcast_text, output_filename):
+    kyle_voice = "4YYIPFl9wE5c4L2eu2Gb"
+    samantha_voice = "mWqiTfcp72MprLxlUR8h"
 
     lines = podcast_text.strip().split("\n")
-    combined = AudioSegment.empty()
+    combined_audio = AudioSegment.empty()
 
     for line in lines:
         line = line.strip()
@@ -109,33 +109,33 @@ def generate_podcast_audio(podcast_text, filename):
             continue
 
         if line.startswith("Kyle:"):
-            voice_id = kyle_voice_id
-            text = line.replace("Kyle:", "").strip()
+            selected_voice = kyle_voice
+            dialog = line.replace("Kyle:", "").strip()
         elif line.startswith("Samantha:"):
-            voice_id = samantha_voice_id
-            text = line.replace("Samantha:", "").strip()
+            selected_voice = samantha_voice
+            dialog = line.replace("Samantha:", "").strip()
         else:
             continue
 
-        audio = el_client.text_to_speech.convert(
-            text=text,
-            voice_id=voice_id,
+        generated_audio = elevenlabs_client.text_to_speech.convert(
+            text=dialog,
+            voice_id=selected_voice,
             model_id="eleven_turbo_v2_5",
             output_format="mp3_44100_128",
         )
 
         audio_bytes = b""
-        for chunk in audio:
+        for chunk in generated_audio:
             audio_bytes += chunk
 
         temp_file = "temp_line.mp3"
-        with open(temp_file, "wb") as f:
-            f.write(audio_bytes)
+        with open(temp_file, "wb") as file:
+            file.write(audio_bytes)
         segment = AudioSegment.from_mp3(temp_file)
-        combined += segment
+        combined_audio += segment
         os.remove(temp_file)
 
-        combined.export(filename, format="mp3")
+    combined_audio.export(output_filename, format="mp3")
 
 # --- Main App ---
 topic = st.text_input("What would you like to research?", placeholder="e.g. The future of AI agents in business")
@@ -150,7 +150,7 @@ if st.button("Generate Podcast") and topic:
     research_summary = ""
 
     for i in range(max_loops):
-        response = client.messages.create(
+        response = claude_client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=1024,
             system=system_prompt,
@@ -159,24 +159,24 @@ if st.button("Generate Podcast") and topic:
         )
 
         if response.stop_reason == "end_turn":
-            for block in response.content:
-                if hasattr(block, "text"):
-                    research_summary += block.text
+            for item in response.content:
+                if hasattr(item, "text"):
+                    research_summary += item.text
             break
 
         if response.stop_reason == "tool_use":
             messages.append({"role": "assistant", "content": response.content})
 
             tool_results = []
-            for block in response.content:
-                if block.type == "tool_use":
-                    search_query = block.input["query"]
+            for item in response.content:
+                if item.type == "tool_use":
+                    search_query = item.input["query"]
                     status.write(f"🔍 Searching: {search_query}")
                     search_results = run_search(search_query)
 
                     tool_results.append({
                         "type": "tool_result",
-                        "tool_use_id": block.id,
+                        "tool_use_id": item.id,
                         "content": search_results
                     })
 
@@ -186,7 +186,7 @@ if st.button("Generate Podcast") and topic:
 
     # Generate podcast script
     with st.status("Writing podcast script...", expanded=False):
-        podcast_response = client.messages.create(
+        podcast_response = claude_client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=2048,
             system=podcast_prompt,
@@ -196,13 +196,9 @@ if st.button("Generate Podcast") and topic:
         )
 
         podcast_text = ""
-        for block in podcast_response.content:
-            if hasattr(block, "text"):
-                podcast_text += block.text
-
-    # Show the script
-    # st.subheader("📝 Podcast Script")
-    # st.write(podcast_text)
+        for item in podcast_response.content:
+            if hasattr(item, "text"):
+                podcast_text += item.text
 
     # Generate audio
     with st.status("Generating audio...", expanded=False):
@@ -224,4 +220,4 @@ if st.button("Generate Podcast") and topic:
         )
 
     # Clean up
-    #os.remove(filename_mp3)
+    os.remove(filename_mp3)
