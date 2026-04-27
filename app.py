@@ -63,7 +63,7 @@ Rules:
 - Use filler words, filled pauses, and hesitation markers to mimic the rhythm of a real conversation.
 - Avoid m-dashes, markdown, atserisks, and other punctuation that cannot be spoken by TTS.
 - End with a "What to watch" closing from Kyle.
-- Format each line as: Kyle: or Jamie: followed by their dialog."""
+- Format each line as: Kyle: or Samantha: followed by their dialog."""
 
 # --- Tools ---
 tools = [
