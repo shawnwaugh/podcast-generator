@@ -6,6 +6,11 @@ from elevenlabs.client import ElevenLabs
 from pydub import AudioSegment
 from ddgs import DDGS
 
+# ---Session State Creation---
+if "podcast_audio" not in st.session_state:
+    st.session_state.podcast_audio = None
+    st.session_state.podcast_filename = None
+
 # --- Page Setup ---
 st.set_page_config(page_title="AI Podcast Generator", page_icon="🎙️")
 st.title("🎙️ AI Podcast Generator")
@@ -207,17 +212,20 @@ if st.button("Generate Podcast") and topic:
 
         generate_podcast_audio(podcast_text, filename_mp3)
 
-    # Show audio player
-    st.subheader("🎧 Listen")
+# Store audio in Session State
     with open(filename_mp3, "rb") as audio_file:
-        st.audio(audio_file.read(), format="audio/mp3")
-    with open(filename_mp3, "rb") as download_file:
-        st.download_button(
-            label="⬇️ Download Full Podcast",
-            data=download_file.read(),
-            file_name=filename_mp3,
-            mime="audio/mp3"
-        )
+        st.session_state.podcast_audio = audio_file.read()
+        st.session_state.podcast_filename = filename_mp3
 
     # Clean up
     os.remove(filename_mp3)
+
+if st.session_state.podcast_audio:
+    st.subheader("🎧 Listen")
+    st.audio(st.session_state.podcast_audio, format="audio/mp3")
+    st.download_button(
+        label="⬇️ Download Full Podcast",
+        data=st.session_state.podcast_audio,
+        file_name=st.session_state.podcast_filename,
+        mime="audio/mp3"
+    )
