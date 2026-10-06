@@ -1,4 +1,6 @@
+streamlit
 anthropic
 elevenlabs
 ddgs
 pydub
+audioop-lts; python_version >= "3.13"
