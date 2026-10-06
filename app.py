@@ -133,7 +133,7 @@ def generate_podcast_audio(podcast_text, output_filename):
         generated_audio = elevenlabs_client.text_to_speech.convert(
             text=dialog,
             voice_id=selected_voice,
-            model_id="eleven_turbo_v4_turbo",
+            model_id="eleven_v4_turbo",
             output_format="mp3_44100_128",
         )
 
