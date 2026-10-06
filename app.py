@@ -1,3 +1,10 @@
+# AI Podcast Generator
+# Flow: Claude researches a topic with a web search tool loop, a second Claude
+# call turns the summary into a two host script, ElevenLabs voices each line,
+# and pydub joins the lines into one MP3.
+# Requires ANTHROPIC_API_KEY and ELEVENLABS_API_KEY as environment variables,
+# and ffmpeg installed on the machine.
+
 import streamlit as st
 import anthropic
 import json
